@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>xpath test</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write("<script src='jquery.min.js'>\x3C/script>")</script>
+	<script type="text/javascript">
+		function nsResolver(prefix) {
+			var ns = {
+				'p' : 'http://ns.webservices.bbc.co.uk/2006/02/pips'
+			};
+			return ns[prefix] || null;
+		}
+
+		function updateStatus() {
+			var res;
+			var msg;
+			try {
+				msg = eval();
+				res = 'nodes: [null]' != msg;
+			} catch (err) {
+				res = false;
+				msg = "doesn't compile: " + err;
+			}
+			$('#res').text(msg);
+			$('#res').css({ 'background-color': res ? '#70ff7e' : '#ff5533' });
+		}
+
+		function errorFrom(xmlDoc) {
+			if (xmlDoc.parseError && xmlDoc.parseError.errorCode != 0) {
+				throw "XML Parsing Error: " + xmlDoc.parseError.reason
+						+ " at line " + xmlDoc.parseError.line
+						+ " at position " + xmlDoc.parseError.linepos;
+			}
+			else {
+				if (xmlDoc.documentElement) {
+					if (xmlDoc.documentElement.nodeName == "parsererror") {
+						throw xmlDoc.documentElement.childNodes[0].nodeValue;
+					}
+				}
+				else {
+					throw "Unknown XML parsing error in sample data";
+				}
+			}
+			return xmlDoc;
+		}
+
+		function format(res) {
+			if (null == res)
+				return "null";
+			switch (res.resultType) {
+				case 1:
+					return "number: " + res.numberValue;
+				case 2:
+					return "string: " + res.stringValue;
+				case 3:
+					return "boolean: " + res.booleanValue;
+				case 4:
+				case 5:
+					return "nodes: [" + format(res.iterateNext()) + "]";
+				case undefined:
+					if (res instanceof Element)
+						return "node: " + res.nodeName;
+					if (res instanceof Document)
+						return "document";
+					if (res instanceof Attr)
+						return "attr: " + res.name + "=" + res.value;
+					return "unknown: " + res.constructor.name + ": " + res;
+				default:
+					return "unknown" + res.resultType + ": " + res;
+			}
+		}
+
+		function evaluate(node, expr) {
+			const res = node.evaluate(expr, node, nsResolver, XPathResult.ANY_TYPE, null);
+			return null == res ? null : format(res);
+		}
+
+		function eval() {
+			const expression = $('#expression').val();
+			const dataString = $('#data').val();
+			const parsedNode = errorFrom(new DOMParser().parseFromString(dataString, "text/xml"));
+			return evaluate(parsedNode, expression);
+		}
+
+		function toUrl() {
+			location.hash = encodeURIComponent(JSON.stringify([$('#expression').val(), $('#data').val()]));
+		}
+
+		$(document).ready(function() {
+			if (location.hash != '') {
+				var a = JSON.parse(decodeURIComponent(location.hash.substring(1)));
+				$('#expression').val(a[0]);
+				$('#data').val(a[1]);
+			}
+
+			updateStatus();
+		});
+	</script>
+	<style type="text/css">
+		.fullwidth { width: 100% }
+	</style>
+</head>
+<body>
+<p>Result: <pre id="res"></pre></p>
+<p>Expression: <input type="button" value="add to url" onclick="toUrl()"/>
+<input type="text" class="fullwidth" id="expression" onKeyUp="updateStatus()"/></p>
+<p>Data:</p>
+<p>
+<textarea id="data" cols="80" rows="40" onKeyUp="updateStatus()">
+&lt;a&gt;
+	&lt;b/&gt;
+	&lt;c id="5"/&gt;
+&lt;/a&gt;
+</textarea>
+</p>
+</body>
+</html>
+
