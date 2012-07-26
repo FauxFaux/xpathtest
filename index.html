@@ -74,14 +74,14 @@
 		}
 
 		function evaluate(node, expr) {
-			const res = node.evaluate(expr, node, nsResolver, XPathResult.ANY_TYPE, null);
+			var res = node.evaluate(expr, node, nsResolver, XPathResult.ANY_TYPE, null);
 			return null == res ? null : format(res);
 		}
 
 		function eval() {
-			const expression = $('#expression').val();
-			const dataString = $('#data').val();
-			const parsedNode = errorFrom(new DOMParser().parseFromString(dataString, "text/xml"));
+			var expression = $('#expression').val();
+			var dataString = $('#data').val();
+			var parsedNode = errorFrom(new DOMParser().parseFromString(dataString, "text/xml"));
 			return evaluate(parsedNode, expression);
 		}
 
